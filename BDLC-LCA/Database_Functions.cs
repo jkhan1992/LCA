@@ -111,53 +111,6 @@ namespace BDLC_LCA
             return success;
         }
 
-        public static void SendRelayStatusQueries(string db, List<string> Relaystatus)
-        {
-            using (SQLiteConnection sql_con = new SQLiteConnection(db))
-            {
-                try
-                {
-                    sql_con.Open();
-                }
-                catch (Exception es)
-                {
-                    SystemLogs_DB.Add(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "Failed to open database connection,Error: " + es);
-                }
-                if (sql_con.State == ConnectionState.Open)
-                {
-                    Connected = true;
-                }
-                else
-                {
-                    Connected = false;
-                }
-                if (Connected)
-                {
-                    try
-                    {
-                        SQLiteCommand sql_cmd1 = sql_con.CreateCommand();
-                        sql_cmd1.CommandText = "Begin Transaction;";
-                        sql_cmd1.ExecuteNonQuery();
-
-                        foreach (string str in Relaystatus)
-                        {
-                            SQLiteCommand sql_cmd = sql_con.CreateCommand();
-                            sql_cmd.CommandText = str;
-                            sql_cmd.ExecuteNonQuery();
-                        }
-
-                        SQLiteCommand sql_cmd2 = sql_con.CreateCommand();
-                        sql_cmd2.CommandText = "Commit;";
-                        sql_cmd2.ExecuteNonQuery();
-                    }
-                    catch (Exception es)
-                    {
-                        SystemLogs_DB.Add(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "Failed to send relay status queries,Error: " + es);
-                    }
-                }
-            }
-        }
-
         public static void SendLogQueries(List<string> SystemLogs11)
         {
             string db = Databasepath + "\\SystemLogs";

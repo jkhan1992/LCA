@@ -206,7 +206,7 @@ namespace BDLC_LCA
                     DateTime date_now = DateTime.Now;
                     while (!success && (DateTime.Now - date_now).Seconds < 30)
                     {
-                        success = SendStatusUpdateQueries(RelayStatusdbconnection, update_queries);
+                        success = SendStatusUpdateQueries(RelayStatusdbconnection, update_queries); //Send queries
                     }
                     update_queries.Clear();
                     
@@ -320,6 +320,7 @@ namespace BDLC_LCA
                     slope = (current_value - previous_value) / (double)(current_date - previous_date).Minutes; //kVA per minute   
                     Slope_History.Add(slope);
                     Console.WriteLine("\nROC History Count = " + Slope_History.Count + "\nCurrent ROC = " + slope +"\nROC Average = " + Slope_History.Average() + "\n");
+                    //ROC = Rate Of Change
                 }
             }
             catch (Exception es)
