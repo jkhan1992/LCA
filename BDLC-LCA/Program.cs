@@ -105,8 +105,8 @@ namespace BDLC_LCA
             {
                 DateTime now_ = DateTime.Now;
                 TimeSpan time = new TimeSpan(now_.Ticks);
-                double running_Remainder = (double)time.TotalMilliseconds % 1000.0;
-                if (running_Remainder < 10000)
+                double running_Remainder = (double)time.TotalSeconds % 60;
+                if (running_Remainder < 15)
                 {
                     check++;
                     if (check == 1)
@@ -157,45 +157,36 @@ namespace BDLC_LCA
 
                         DateTime date_now = DateTime.Now;
 
-                        if (date_now.Second >= 0 & date_now.Second <= 45) //at the end of interval
-                        {
-                            count1++;
-                            if (count1 == 1)
-                            {
-                                try
-                                {
-                                    if (predicted_Average >= 0)
-                                    {
-                                        InsertDemandLog(date_now, BECDemand.BEC_Demand_latest_Date, S_0, latest_demand, Demand_interval, current_slope, Slope_History.Average(), predicted_Ongoing, predicted_Average);
-                                    }
-                                    else
-                                    {
-                                        InsertDemandLog(date_now, BECDemand.BEC_Demand_latest_Date, S_0, latest_demand, Demand_interval, current_slope, predicted_Ongoing);
-                                    }
-                                }
-                                catch (Exception es)
-                                {
-                                    Console.WriteLine("Failed to write Demand Logs to Database, Error: " + es);
-                                }
-                                try
-                                {
-                                    SendLogQueries(SystemLogs_DB);
 
-                                }
-                                catch (Exception es)
-                                {
-                                    Console.WriteLine("Failed to write error Logs to Database, Error: " + es);
-                                }
-                                finally
-                                {
-                                    SystemLogs_DB.Clear();
-                                }
+                        try
+                        {
+                            if (predicted_Average >= 0)
+                            {
+                                InsertDemandLog(date_now, BECDemand.BEC_Demand_latest_Date, S_0, latest_demand, Demand_interval, current_slope, Slope_History.Average(), predicted_Ongoing, predicted_Average);
                             }
                             else
                             {
-                                count1 = 0;
+                                InsertDemandLog(date_now, BECDemand.BEC_Demand_latest_Date, S_0, latest_demand, Demand_interval, current_slope, predicted_Ongoing);
                             }
                         }
+                        catch (Exception es)
+                        {
+                            Console.WriteLine("Failed to write Demand Logs to Database, Error: " + es);
+                        }
+                        try
+                        {
+                            SendLogQueries(SystemLogs_DB);
+
+                        }
+                        catch (Exception es)
+                        {
+                            Console.WriteLine("Failed to write error Logs to Database, Error: " + es);
+                        }
+                        finally
+                        {
+                            SystemLogs_DB.Clear();
+                        }
+
                         try
                         {
                             if ((date_now.Minute + LC_mins_before_interval) % Demand_interval == 0 || date_now.Minute == 0) //at the end of interval
@@ -208,13 +199,7 @@ namespace BDLC_LCA
                                         double average = BECDemand.Demandstorage.Average();
                                         BECDemand.Demandstorage.Clear();
                                         Console.WriteLine("DateTime = " + BECDemand.BEC_Demand_latest_Date + "\nAverage Demand value = " + average.ToString("####0.00"));
-                                        /*
-                                        if ((DateTime.Now - control_started_at).Minutes >= control_timeout_mins)//dont apply control until control timeout minutes if the control was previously applied
-                                        {
-                                            can_apply_control = false;
-                                            Console.WriteLine("Control cannot be applied due to control timeout.");
-                                        }
-                                        */
+                                        
                                         if (average + Defence_Range >= S_0)
                                         {
                                             Console.WriteLine("Demand + Defence range = " + average + Defence_Range);
@@ -296,8 +281,8 @@ namespace BDLC_LCA
                 {
                     check = 0;
                 }
-                Thread.Sleep(10);
-                i = 0;
+                Thread.Sleep(1000);
+                i = 1;
             }
         }
 
