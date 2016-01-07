@@ -20,9 +20,11 @@ namespace BDLC_LCA
         public static readonly string LiveDatadb = "LiveData.db";
         public static readonly string RelayStatusdb = "RelayStatus.db";
         public static readonly string ControlLogsdb = "ControlLogs.db";
+        public static readonly string BECDemanddb = "BECDemand.db";
         public static readonly string ErrorLogsdb = "LCAErrorLogs";
         public static readonly string Databasepath = ConfigurationManager.AppSettings[0].ToString();
         public static readonly string ControlLogsdbconnection = @"Data Source =" + Databasepath + "\\" + ControlLogsdb + ";Version=3;New=false;Compress=true;";
+        public static readonly string BECDemanddbconnection = @"Data Source =" + Databasepath + "\\" + BECDemanddb + ";Version=3;New=false;Compress=true;";
         public static readonly string RelayStatusdbconnection = @"Data Source =" + Databasepath + "\\" + RelayStatusdb + ";Version=3;New=false;Compress=true;";
         public static readonly string LiveDatadbconnection = @"Data Source =" + Databasepath + "\\" + LiveDatadb + ";Version=3;New=false;Compress=true;";
         public static string Errordbconnection;
@@ -591,9 +593,7 @@ namespace BDLC_LCA
             string Error = "INSERT INTO SystemLogs VALUES (";
             Error += id + ", '" + DateTime.Now + "', '" + error + "');";
             return Error;
-        }
-
-        
+        }        
 
         public static string ReadData(string tablename, string[] parameters)
         {
@@ -687,6 +687,18 @@ namespace BDLC_LCA
             }
         }
         
+        public static void InsertBECDemandLog(DateTime start, DateTime end, DateTime log_time, double value)
+        {
+            string insert = "INSERT INTO Demand_Logs VALUES(\"" + start.ToString("yyyy-MM-ddTHH:mm:ss") + "\",\"" + end.ToString("yyyy-MM-ddTHH:mm:ss") + "\",\"";
+            insert += log_time.ToString("yyyy-MM-ddTHH:mm:ss") + "\"," + value + ");";
+            bool success = false;
+            DateTime date_now = DateTime.Now;
+            while (!success && (DateTime.Now - date_now).Seconds < 30)
+            {
+                success = SendQuery(BECDemanddbconnection, insert);
+            }
+        }
+
         public static void Delete_Older_Logs(int number, string connectionstring)
         {
             DateTime deleteDate = DateTime.Now.AddDays(-number);
@@ -707,6 +719,7 @@ namespace BDLC_LCA
             try
             {
                 Create_ControlLogsdb();
+                Create_BECDemanddb();
                 Create_ErrorLogsdb();
             }
             catch (Exception es)
@@ -748,7 +761,28 @@ namespace BDLC_LCA
             {
                 SystemLogs_DB.Add(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss" + "Error while creating Tables for " + ControlLogsdb + ",Error: " + es.ToString()));
             }
-        }        
+        }
+
+        public static void Create_BECDemanddb()
+        {
+            string path = Databasepath + "\\" + BECDemanddb;
+
+            SQLiteConnection.CreateFile(path);
+
+            string Datadb_table1 = @"CREATE TABLE `Demand_Logs` (
+	                                `Start_DateTime`	TEXT,
+	                                `End_DateTime`	TEXT,
+	                                `DateTime_of_Log`	TEXT,
+	                                `Average_Value`	REAL);";
+            try
+            {
+                SendQuery(BECDemanddbconnection, Datadb_table1);
+            }
+            catch (Exception es)
+            {
+                SystemLogs_DB.Add(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss" + "Error while creating Tables for " + BECDemanddb + ",Error: " + es.ToString()));
+            }
+        }
 
         public static void Create_ErrorLogsdb()
         {
@@ -777,7 +811,7 @@ namespace BDLC_LCA
 
         public static void Check_Database_Existence()
         {
-            Thread[] theseThreads = new Thread[2];
+            Thread[] theseThreads = new Thread[3];
 
             //Check if Sqlite Browser is running.
             Process[] processes = Process.GetProcesses(); ;
@@ -823,7 +857,25 @@ namespace BDLC_LCA
                 }
                 catch (Exception es)
                 {
-                    SystemLogs_DB.Add(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + " Failed to create" + Databasepath + "\\SystemLogs\\" + DateTime.Now.Year + "\\" + DateTime.Now.ToString("MMM") + "\\" + ControlLogsdb + DateTime.Now.ToString("yyyy-MM-dd") + ".db" + ",Error: " + es);
+                    SystemLogs_DB.Add(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + " Failed to create" + Databasepath + "\\" + ControlLogsdb + ".db ,Error: " + es);
+                }
+
+                try
+                {
+                    if (!File.Exists(Databasepath + "\\" + BECDemanddb))
+                    {
+                        Thread createdb = new Thread(() =>
+                        {
+                            SystemLogs_DB.Add(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "\nCreating BECDemand.db database file");
+                            Create_BECDemanddb();
+                            SystemLogs_DB.Add(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "BECDemand.db creation complete\n");
+                        });
+                        theseThreads[1] = createdb;
+                    }
+                }
+                catch (Exception es)
+                {
+                    SystemLogs_DB.Add(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + " Failed to create" + Databasepath + "\\" + BECDemanddb + ".db ,Error: " + es);
                 }
 
                 try
@@ -836,7 +888,7 @@ namespace BDLC_LCA
                             Create_ErrorLogsdb();
                             SystemLogs_DB.Add(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "SystemLogs.db creation complete\n");
                         });
-                        theseThreads[1] = createdb;
+                        theseThreads[2] = createdb;
                     }
                 }
                 catch (Exception es)
@@ -849,7 +901,7 @@ namespace BDLC_LCA
                     if (thr != null)
                         thr.Start();
                 }
-                for (int i = 0; i < 2; i++)
+                for (int i = 0; i < 3; i++)
                 {
                     if (theseThreads[i] != null)
                     {

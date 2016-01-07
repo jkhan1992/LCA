@@ -13,8 +13,7 @@ namespace BDLC_LCA
         private static bool first_start = true;
         private static int count1 = 0;
         private static int count2 = 0;
-
-
+        
         static void Main(string[] args)
         {
             Console.WriteLine("Initializing Program...");
@@ -94,195 +93,210 @@ namespace BDLC_LCA
             {
                 Run();
             });
-            main_thread.Start();            
+            main_thread.Start();
+            BECDemand.Start_BEC_Demand_Logging_Thread();
         }
 
         public static void Run()
         {
             int i = 0;
+            int check = 0;
             while (i < 100)
             {
-                Clear_Console(console_top);
-                Console.SetCursorPosition(0, console_top);
-                                
-                Set_Remaining_Minutes(DateTime.Now); //Set value of minutes remaining until next interval
-                double latest_demand = 0;
-                try
+                DateTime now_ = DateTime.Now;
+                TimeSpan time = new TimeSpan(now_.Ticks);
+                double running_Remainder = (double)time.TotalMilliseconds % 1000.0;
+                if (running_Remainder < 10000)
                 {
-                    BECDemand.LoadBECData(); //load demand to BECDemand.Demandstorage
-                    latest_demand = BECDemand.Demandstorage.Last();
-
-                    Add_to_Demand_History(latest_demand, BECDemand.BEC_Demand_latest_Date); //add latest demand value to demand history
-                    Console.WriteLine("Peak to defend is set to: " + S_0.ToString("####0.00 kVA"));
-                    Console.WriteLine("DateTime = " + BECDemand.BEC_Demand_latest_Date + "\nDemand value = " + latest_demand.ToString("####0.00 kVA"));
-
-                }
-                catch (Exception es)
-                {
-                    Console.WriteLine("Failed to load demand, Error: " + es);
-                }
-
-                double predicted_Ongoing = ((current_slope * Remaining_minutes) + latest_demand); //predicted peek for next interval based on ongoing ROC
-                double predicted_Average = 0.0;
-
-                try
-                {
-                    Console.WriteLine(Remaining_minutes + " minutes are remaining until next interval");
-
-                    predicted_Ongoing = ((current_slope * Remaining_minutes) + latest_demand); //predicted peek for next interval based on ongoing ROC
-                    predicted_Average = -1; //predicted peek for next interval based on average ROC
-                    Console.WriteLine("\nOngoing Rate of change of Demand [kVA per minute] = " + current_slope.ToString("####0.00"));
-                    Console.WriteLine("With current Ongoing [kVA per minute], at the end of this " + Demand_interval + " minutes interval,  Peak will be " + predicted_Ongoing.ToString("####0.00 kVA"));
-                    if (Slope_History.Count > 0)
-                    {                        
-                        predicted_Average = ((Slope_History.Average() * Remaining_minutes) + latest_demand);
-
-                        Console.WriteLine("\nAverage Rate of change of Demand [kVA per minute] = " + Slope_History.Average().ToString("####0.00"));                        
-                        Console.WriteLine("With current Average [kVA per minute], at the end of this " + Demand_interval + " minutes interval,  Peak will be " + predicted_Average.ToString("####0.00 kVA"));
-                    }
-                }
-                catch (Exception es)
-                {
-                    Console.WriteLine("Failed to update predicted values, Error: " + es);
-                }                    
-
-                DateTime date_now = DateTime.Now;                    
-
-                if (date_now.Second >= 0 & date_now.Second <= 45) //at the end of interval
-                {
-                    count1++;
-                    if (count1 == 1)
+                    check++;
+                    if (check == 1)
                     {
+                        Clear_Console(console_top);
+                        Console.SetCursorPosition(0, console_top);
+
+                        Set_Remaining_Minutes(DateTime.Now); //Set value of minutes remaining until next interval
+                        double latest_demand = 0;
                         try
                         {
-                            if (predicted_Average >= 0)
-                            {
-                                InsertDemandLog(date_now, BECDemand.BEC_Demand_latest_Date, S_0, latest_demand, Demand_interval, current_slope, Slope_History.Average(), predicted_Ongoing, predicted_Average);
-                            }
-                            else
-                            {
-                                InsertDemandLog(date_now, BECDemand.BEC_Demand_latest_Date, S_0, latest_demand, Demand_interval, current_slope, predicted_Ongoing);
-                            }
-                        }
-                        catch (Exception es)
-                        {
-                            Console.WriteLine("Failed to write Demand Logs to Database, Error: " + es);
-                        }
-                        try
-                        {
-                            SendLogQueries(SystemLogs_DB);
+                            BECDemand.LoadBECData(); //load demand to BECDemand.Demandstorage
+                            latest_demand = BECDemand.Demandstorage.Last();
+
+                            Add_to_Demand_History(latest_demand, BECDemand.BEC_Demand_latest_Date); //add latest demand value to demand history
+                            Console.WriteLine("Peak to defend is set to: " + S_0.ToString("####0.00 kVA"));
+                            Console.WriteLine("DateTime = " + BECDemand.BEC_Demand_latest_Date + "\nDemand value = " + latest_demand.ToString("####0.00 kVA"));
 
                         }
                         catch (Exception es)
                         {
-                            Console.WriteLine("Failed to write error Logs to Database, Error: " + es);
+                            Console.WriteLine("Failed to load demand, Error: " + es);
                         }
-                        finally
+
+                        double predicted_Ongoing = ((current_slope * Remaining_minutes) + latest_demand); //predicted peek for next interval based on ongoing ROC
+                        double predicted_Average = 0.0;
+
+                        try
                         {
-                            SystemLogs_DB.Clear();
-                        }
-                    }
-                    else
-                    {
-                        count1 = 0;
-                    }
-                }
-                try
-                {
-                    if ((date_now.Minute + LC_mins_before_interval) % Demand_interval == 0 || date_now.Minute == 0) //at the end of interval
-                    {
-                        count2++;
-                        if (count2 == 1)
-                        {
-                            if ((date_now - BECDemand.BEC_Demand_latest_Date).Minutes < 15)
+                            Console.WriteLine(Remaining_minutes + " minutes are remaining until next interval");
+
+                            predicted_Ongoing = ((current_slope * Remaining_minutes) + latest_demand); //predicted peek for next interval based on ongoing ROC
+                            predicted_Average = -1; //predicted peek for next interval based on average ROC
+                            Console.WriteLine("\nOngoing Rate of change of Demand [kVA per minute] = " + current_slope.ToString("####0.00"));
+                            Console.WriteLine("With current Ongoing [kVA per minute], at the end of this " + Demand_interval + " minutes interval,  Peak will be " + predicted_Ongoing.ToString("####0.00 kVA"));
+                            if (Slope_History.Count > 0)
                             {
-                                double average = BECDemand.Demandstorage.Average();
-                                BECDemand.Demandstorage.Clear();
-                                Console.WriteLine("DateTime = " + BECDemand.BEC_Demand_latest_Date + "\nAverage Demand value = " + average.ToString("####0.00"));
-                                /*
-                                if ((DateTime.Now - control_started_at).Minutes >= control_timeout_mins)//dont apply control until control timeout minutes if the control was previously applied
-                                {
-                                    can_apply_control = false;
-                                    Console.WriteLine("Control cannot be applied due to control timeout.");
-                                }
-                                */
-                                if (average + Defence_Range >= S_0)
-                                {
-                                    Console.WriteLine("Demand + Defence range = " + average + Defence_Range);
-                                    Full_Control_ON(average);
-                                    if (average > S_0)
-                                    {
-                                        S_0 = average;
-                                    }
-                                    if(first_start)
-                                    {
-                                        control_started_at = DateTime.Now; //update control start time
-                                        control_removed_at = control_started_at.AddMinutes(1); //update control remove time
-                                    }
-                                    if (control_removed_at > control_started_at) //if control was removed earlier
-                                    {
-                                        control_started_at = DateTime.Now; //update control start time
-                                    }
-                                }
-                                else if (average + (Defence_Range * 2) <= S_0)
-                                {
-                                    Console.WriteLine("Demand + Defence range = " + average + Defence_Range);
-                                    Control_OFF(average);
-                                    if(first_start)
-                                    {
-                                        control_removed_at = DateTime.Now; //update control remove time
-                                        control_started_at = control_removed_at.AddMinutes(1); //update control start time
-                                    }
-                                    if (control_started_at > control_removed_at)
-                                    {
-                                        control_removed_at = DateTime.Now;//update control remove time
-                                    }
-                                    if((DateTime.Now - control_removed_at).TotalMinutes > control_timeout_mins) //apply control if it has been disabled for previous "control_timeout_mins" minutes
-                                    {
-                                        can_apply_control = true;
-                                    }
-                                }
-                                first_start = false;
+                                predicted_Average = ((Slope_History.Average() * Remaining_minutes) + latest_demand);
 
-                                /*
-                                    Defended - 50kVA = BEC demand -> apply load
-                                    S0, S (BEC demand at the end of interval)
+                                Console.WriteLine("\nAverage Rate of change of Demand [kVA per minute] = " + Slope_History.Average().ToString("####0.00"));
+                                Console.WriteLine("With current Average [kVA per minute], at the end of this " + Demand_interval + " minutes interval,  Peak will be " + predicted_Average.ToString("####0.00 kVA"));
+                            }
+                        }
+                        catch (Exception es)
+                        {
+                            Console.WriteLine("Failed to update predicted values, Error: " + es);
+                        }
 
-                                    if S + 50 >= Defended -> apply full load control
-                                    if S + 100 <= Defended -> remove control
-                                */
+                        DateTime date_now = DateTime.Now;
+
+                        if (date_now.Second >= 0 & date_now.Second <= 45) //at the end of interval
+                        {
+                            count1++;
+                            if (count1 == 1)
+                            {
+                                try
+                                {
+                                    if (predicted_Average >= 0)
+                                    {
+                                        InsertDemandLog(date_now, BECDemand.BEC_Demand_latest_Date, S_0, latest_demand, Demand_interval, current_slope, Slope_History.Average(), predicted_Ongoing, predicted_Average);
+                                    }
+                                    else
+                                    {
+                                        InsertDemandLog(date_now, BECDemand.BEC_Demand_latest_Date, S_0, latest_demand, Demand_interval, current_slope, predicted_Ongoing);
+                                    }
+                                }
+                                catch (Exception es)
+                                {
+                                    Console.WriteLine("Failed to write Demand Logs to Database, Error: " + es);
+                                }
+                                try
+                                {
+                                    SendLogQueries(SystemLogs_DB);
+
+                                }
+                                catch (Exception es)
+                                {
+                                    Console.WriteLine("Failed to write error Logs to Database, Error: " + es);
+                                }
+                                finally
+                                {
+                                    SystemLogs_DB.Clear();
+                                }
                             }
                             else
                             {
-                                Console.WriteLine(date_now + ". BEC demand is not being updated. Please check server collecting data for BEC");
-                                SystemLogs_DB.Add(date_now + ". BEC demand is not being updated. Please check server collecting data for BEC");
+                                count1 = 0;
                             }
-                            Slope_History.Clear();
-                            Clear_Demand_History();                            
+                        }
+                        try
+                        {
+                            if ((date_now.Minute + LC_mins_before_interval) % Demand_interval == 0 || date_now.Minute == 0) //at the end of interval
+                            {
+                                count2++;
+                                if (count2 == 1)
+                                {
+                                    if ((date_now - BECDemand.BEC_Demand_latest_Date).Minutes < 15)
+                                    {
+                                        double average = BECDemand.Demandstorage.Average();
+                                        BECDemand.Demandstorage.Clear();
+                                        Console.WriteLine("DateTime = " + BECDemand.BEC_Demand_latest_Date + "\nAverage Demand value = " + average.ToString("####0.00"));
+                                        /*
+                                        if ((DateTime.Now - control_started_at).Minutes >= control_timeout_mins)//dont apply control until control timeout minutes if the control was previously applied
+                                        {
+                                            can_apply_control = false;
+                                            Console.WriteLine("Control cannot be applied due to control timeout.");
+                                        }
+                                        */
+                                        if (average + Defence_Range >= S_0)
+                                        {
+                                            Console.WriteLine("Demand + Defence range = " + average + Defence_Range);
+                                            Full_Control_ON(average);
+                                            if (average > S_0)
+                                            {
+                                                S_0 = average;
+                                            }
+                                            if (first_start)
+                                            {
+                                                control_started_at = DateTime.Now; //update control start time
+                                                control_removed_at = control_started_at.AddMinutes(1); //update control remove time
+                                            }
+                                            if (control_removed_at > control_started_at) //if control was removed earlier
+                                            {
+                                                control_started_at = DateTime.Now; //update control start time
+                                            }
+                                        }
+                                        else if (average + (Defence_Range * 2) <= S_0)
+                                        {
+                                            Console.WriteLine("Demand + Defence range = " + average + Defence_Range);
+                                            Control_OFF(average);
+                                            if (first_start)
+                                            {
+                                                control_removed_at = DateTime.Now; //update control remove time
+                                                control_started_at = control_removed_at.AddMinutes(1); //update control start time
+                                            }
+                                            if (control_started_at > control_removed_at)
+                                            {
+                                                control_removed_at = DateTime.Now;//update control remove time
+                                            }
+                                            if ((DateTime.Now - control_removed_at).TotalMinutes > control_timeout_mins) //apply control if it has been disabled for previous "control_timeout_mins" minutes
+                                            {
+                                                can_apply_control = true;
+                                            }
+                                        }
+                                        first_start = false;
+
+                                        /*
+                                            Defended - 50kVA = BEC demand -> apply load
+                                            S0, S (BEC demand at the end of interval)
+
+                                            if S + 50 >= Defended -> apply full load control
+                                            if S + 100 <= Defended -> remove control
+                                        */
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine(date_now + ". BEC demand is not being updated. Please check server collecting data for BEC");
+                                        SystemLogs_DB.Add(date_now + ". BEC demand is not being updated. Please check server collecting data for BEC");
+                                    }
+                                    Slope_History.Clear();
+                                    Clear_Demand_History();
+                                }
+                            }
+                            else
+                            {
+                                count2 = 0;
+                            }
+                        }
+                        catch (Exception es)
+                        {
+                            Console.WriteLine("Failed to update Control status, Error: " + es);
+                        }
+
+                        Console.WriteLine("Control was started at : " + control_started_at);
+                        Console.WriteLine("Control was removed at : " + control_removed_at);
+                        if (full_Control_ON)
+                        {
+                            Console.WriteLine(DateTime.Now + ": Full Control is ON.");
+                        }
+                        else if (control_OFF)
+                        {
+                            Console.WriteLine(DateTime.Now + ": Control is OFF.");
                         }
                     }
-                    else
-                    {
-                        count2 = 0;
-                    }
                 }
-                catch(Exception es)
+                else
                 {
-                    Console.WriteLine("Failed to update Control status, Error: " + es);
+                    check = 0;
                 }
-
-                Console.WriteLine("Control was started at : " + control_started_at);
-                Console.WriteLine("Control was removed at : " + control_removed_at);
-                if (full_Control_ON)
-                {
-                    Console.WriteLine(DateTime.Now + ": Full Control is ON.");
-                }
-                else if (control_OFF)
-                {
-                    Console.WriteLine(DateTime.Now + ": Control is OFF.");
-                }
-                
-                Thread.Sleep(30000);
+                Thread.Sleep(10);
                 i = 0;
             }
         }
