@@ -160,6 +160,15 @@ namespace BDLC_LCA
             return Demand;
         }
 
+        public static string ReadBECDemand2(int log_int)
+        {
+            int offset = -1 * (DateTime.UtcNow - DateTime.Now).Hours;
+            string Demand = "SELECT [SourceName],[SourceNamespace],DATEADD(HOUR," + offset + ", [TimestampUTC]),[Value] ";
+            Demand += "FROM [ION_Data].[dbo].[vDataLogChannelValue] WHERE SourceName = 'IONMeter.BEC' and Quantity Like ";
+            Demand += "'apparent power sli%' and TimestampUTC between dateAdd(mi,-"+(log_int - 1)+", dateadd(minute, datediff(minute,0, getutcdate()) / "+ log_int + " * " + log_int + ", 0)) and dateadd(minute, datediff(minute,0, getutcdate()) / " + log_int + " * " + log_int + ", 0)";
+            return Demand;
+        }
+
         public static List<string> GetSystemLogs()
         {
             return SystemLogs_BECDemand;
