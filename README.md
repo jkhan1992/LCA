@@ -1,1 +1,1 @@
-# LCA © Copyright 2012-2016 AMG ENERGY INC.
+# LCA © Copyright 2015-2016 AMG ENERGY INC.
