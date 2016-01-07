@@ -16,6 +16,7 @@ namespace BDLC_LCA
         
         static void Main(string[] args)
         {
+            Console.Title = "Load Control Application - BDLC";
             Console.WriteLine("Initializing Program...");
             Check_Database_Existence();
             Console.WriteLine("Initialization Completed at " + DateTime.Now);
