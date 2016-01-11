@@ -57,22 +57,21 @@ namespace BDLC_LCA
             List<string> received = new List<string>();
             using (SqlConnection sql_con1 = new SqlConnection(BECdbconnection))
             {
-                
-                sql_con1.Open();
-                if (sql_con1.State == ConnectionState.Open)
+                try
                 {
-                    Connected = true;
-                }
-                else
-                {
-                    Connected = false;
-                }
-                string received1 = "";
-                ushort currentrow = 0;
+                    sql_con1.Open();
+                    if (sql_con1.State == ConnectionState.Open)
+                    {
+                        Connected = true;
+                    }
+                    else
+                    {
+                        Connected = false;
+                    }
+                    string received1 = "";
+                    ushort currentrow = 0;
 
-                if (Connected)
-                {
-                    try
+                    if (Connected)
                     {
                         SqlCommand sql_cmd = new SqlCommand();
                         sql_cmd.Connection = sql_con1;
@@ -99,14 +98,14 @@ namespace BDLC_LCA
                                                 received1 += rdr.GetName(n) + ",";
                                             }
                                         }
-                                        received.Add(received1);                                        
+                                        received.Add(received1);
                                         SystemLogs_BECDemand.Add(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + received1);
                                     }
                                     received1 = "";
                                     for (int n = 0; n < rdr.FieldCount; n++)
                                     {
                                         if (n == rdr.FieldCount - 1)
-                                        {                                            
+                                        {
                                             received1 += rdr.GetValue(n);
                                         }
                                         else
@@ -124,7 +123,7 @@ namespace BDLC_LCA
                                         Demandstorage.Add(value);
                                         received.Add(received1);
                                     }
-                                    currentrow ++;
+                                    currentrow++;
                                 }
                             }
                             else
@@ -133,17 +132,16 @@ namespace BDLC_LCA
                             }
                         }
                     }
-                    catch (Exception es)
-                    {
-                        SystemLogs_BECDemand.Add(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "Failed to read data!!,Error: " + es);
-                    }
-                    finally
-                    {
-                        sql_con1.Close();
-
-                    }
-
                 }
+                catch (Exception es)
+                {
+                    SystemLogs_BECDemand.Add(DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss") + "Failed to read data!!,Error: " + es);
+                }
+                finally
+                {
+                    sql_con1.Close();
+
+                }                
             }
             return received;
 
@@ -333,30 +331,38 @@ namespace BDLC_LCA
         {
             Thread logging_thread = new Thread(() =>
             {
-                int i = 0;
-                int check = 0;
-                while (i < 100)
+                try
                 {
-                    DateTime now_ = DateTime.Now;
-                    TimeSpan time = new TimeSpan(now_.Ticks);
-                    double Logging_Remainder = (double)time.TotalSeconds % (double)logging_interval;
-                    if (Logging_Remainder < 10)
+                    int i = 0;
+                    int check = 0;
+                    while (i < 100)
                     {
-                        check++;
-                        if (check == 1)
+                        DateTime now_ = DateTime.Now;
+                        TimeSpan time = new TimeSpan(now_.Ticks);
+                        double Logging_Remainder = (double)time.TotalSeconds % (double)logging_interval;
+                        if (Logging_Remainder < 10)
                         {
-                            LoadBECData2();
-                            InsertBECDemandLog(BEC_Demand_start_history_Date, BEC_Demand_latest_history_Date, now_, DemandHistorystorage.Average());
-                            DemandHistorystorage.Clear();
+                            check++;
+                            if (check == 1)
+                            {
+                                LoadBECData2();
+                                InsertBECDemandLog(BEC_Demand_start_history_Date, BEC_Demand_latest_history_Date, now_, DemandHistorystorage.Average());
+                                DemandHistorystorage.Clear();
+                            }
                         }
+                        else
+                        {
+                            check = 0;
+                        }
+                        i = 0;
+                        Thread.Sleep(10);
                     }
-                    else
-                    {
-                        check = 0;
-                    }
-                    i = 0;
-                    Thread.Sleep(10);
                 }
+                catch (Exception)
+                {
+
+                }
+                
             });
             logging_thread.Start();
         }
