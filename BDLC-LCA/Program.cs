@@ -13,7 +13,8 @@ namespace BDLC_LCA
         private static bool first_start = true;
         private static int count1 = 0;
         private static int count2 = 0;
-        
+        private static int count3 = 0; //for Set_Defended_Peak_to_Demand function
+                
         static void Main(string[] args)
         {
             Console.Title = "Load Control Application - BDLC";
@@ -23,7 +24,6 @@ namespace BDLC_LCA
 
             Console.WriteLine("Loading Demand_Defending from databast if exists");
             Get_Defended_Peak();
-
 
             Console.WriteLine("Database path = " + Databasepath);
 
@@ -97,7 +97,7 @@ namespace BDLC_LCA
             main_thread.Start();
             BECDemand.Start_BEC_Demand_Logging_Thread();
         }
-
+        
         public static void Run()
         {
             int i = 0;
@@ -107,6 +107,7 @@ namespace BDLC_LCA
                 DateTime now_ = DateTime.Now;
                 TimeSpan time = new TimeSpan(now_.Ticks);
                 double running_Remainder = (double)time.TotalSeconds % 60;
+
                 if (running_Remainder < 15)
                 {
                     check++;
@@ -121,6 +122,11 @@ namespace BDLC_LCA
                         {
                             BECDemand.LoadBECData(); //load demand to BECDemand.Demandstorage
                             latest_demand = BECDemand.Demandstorage.Last();
+
+                            if ((now_ - BECDemand.BEC_Demand_latest_Date).Minutes < 15) //Check if Demand was updated recently
+                            {
+                                Set_Defended_Peak_to_Demand(BECDemand.BEC_Demand_latest_Date, latest_demand);
+                            }
 
                             Add_to_Demand_History(latest_demand, BECDemand.BEC_Demand_latest_Date); //add latest demand value to demand history
                             Console.WriteLine("Peak to defend is set to: " + S_0.ToString("####0.00 kVA"));
@@ -195,7 +201,7 @@ namespace BDLC_LCA
                                 count2++;
                                 if (count2 == 1)
                                 {
-                                    if ((date_now - BECDemand.BEC_Demand_latest_Date).Minutes < 15)
+                                    if ((date_now - BECDemand.BEC_Demand_latest_Date).Minutes < 15) //Check if Demand was updated recently
                                     {
                                         double average = BECDemand.Demandstorage.Average();
                                         BECDemand.Demandstorage.Clear();
@@ -311,6 +317,26 @@ namespace BDLC_LCA
                 }
             }            
             Remaining_minutes = (which_interval_is_it * Demand_interval) - minutes_now;
+        }
+
+        private static void Set_Defended_Peak_to_Demand(DateTime date, double S)
+        {
+            if ((int)date.DayOfWeek > 0 && (int)date.DayOfWeek < 6) //only weekdays
+            {
+                if (date.Hour == 8 && date.Minute == 00)
+                {
+                    count3++;
+                    if (count3 == 1)
+                    {
+                        S_0 = S;
+                        Console.WriteLine("Defended Peak is being set to the value of Demand");
+                    }
+                }
+                else
+                {
+                    count3 = 0;
+                }
+            }
         }
 
     }

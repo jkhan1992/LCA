@@ -10,7 +10,7 @@ namespace BDLC_LCA
     class Control_API : Database_Functions
     {
         public static readonly double default_S_0 = 5300.0; //Peak to defend
-        public static double S_0 = default_S_0; //Peak to defend
+        public static double S_0 = default_S_0; //Peak to defend is set on runtime
         public static readonly double Defence_Range = 50.0;
         private static List<Control_Logs> Control_logs_List = new List<Control_Logs>(); //List for containing logs
         private static List<Devices> R1_Status_List = new List<Devices>(); //contains information of devices and relay status to be written
