@@ -337,24 +337,29 @@ namespace BDLC_LCA
                     int check = 0;
                     while (i < 100)
                     {
-                        DateTime now_ = DateTime.Now;
-                        TimeSpan time = new TimeSpan(now_.Ticks);
-                        double Logging_Remainder = (double)time.TotalSeconds % (double)logging_interval;
-                        if (Logging_Remainder < 10)
+                        try
                         {
-                            check++;
-                            if (check == 1)
+                            DateTime now_ = DateTime.Now;
+                            TimeSpan time = new TimeSpan(now_.Ticks);
+                            double Logging_Remainder = (double)time.TotalSeconds % (double)logging_interval;
+                            if (Logging_Remainder < 10)
                             {
-                                LoadBECData2();
-                                InsertBECDemandLog(BEC_Demand_start_history_Date, BEC_Demand_latest_history_Date, now_, DemandHistorystorage.Average());
-                                DemandHistorystorage.Clear();
+                                check++;
+                                if (check == 1)
+                                {
+                                    LoadBECData2();
+                                    InsertBECDemandLog(BEC_Demand_start_history_Date, BEC_Demand_latest_history_Date, now_, DemandHistorystorage.Average());
+                                    DemandHistorystorage.Clear();
+                                }
                             }
+                            else
+                            {
+                                check = 0;
+                            }
+                            i = 0;
                         }
-                        else
-                        {
-                            check = 0;
-                        }
-                        i = 0;
+                        catch(Exception)
+                        { }
                         Thread.Sleep(10);
                     }
                 }

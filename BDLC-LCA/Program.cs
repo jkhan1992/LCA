@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Configuration;
 
 namespace BDLC_LCA
 {
@@ -14,7 +12,8 @@ namespace BDLC_LCA
         private static int count1 = 0;
         private static int count2 = 0;
         private static int count3 = 0; //for Set_Defended_Peak_to_Demand function
-                
+        private static int test_feature_Days = Convert.ToInt16(ConfigurationManager.AppSettings[5]);        
+
         static void Main(string[] args)
         {
             Console.Title = "Load Control Application - BDLC";
@@ -78,7 +77,7 @@ namespace BDLC_LCA
             Console.WriteLine("\n\n");
             console_top = Console.CursorTop;
             
-            Console.Write("Waiting for next 0 seconds to synchronize\nSeconds Left = ");
+            Console.Write("Waiting for next 0 seconds on clock for synchronization\nSeconds Left = ");
             int top = Console.CursorTop;
             int left = Console.CursorLeft;
 
@@ -321,20 +320,24 @@ namespace BDLC_LCA
 
         private static void Set_Defended_Peak_to_Demand(DateTime date, double S)
         {
-            if ((int)date.DayOfWeek > 0 && (int)date.DayOfWeek < 6) //only weekdays
+            if (test_feature_Days > 0) //check if feature days have expired
             {
-                if (date.Hour == 8 && date.Minute == 00)
+                if ((int)date.DayOfWeek > 0 && (int)date.DayOfWeek < 6) //only weekdays
                 {
-                    count3++;
-                    if (count3 == 1)
+                    if (date.Hour == 8 && date.Minute == 00)
                     {
-                        S_0 = S;
-                        Console.WriteLine("Defended Peak is being set to the value of Demand");
+                        count3++;
+                        if (count3 == 1)
+                        {
+                            S_0 = S;
+                            test_feature_Days--;
+                            Console.WriteLine("Defended Peak is being set to the value of Demand. \nThis process will be repeated for {0} week days",test_feature_Days);
+                        }
                     }
-                }
-                else
-                {
-                    count3 = 0;
+                    else
+                    {
+                        count3 = 0;
+                    }
                 }
             }
         }
